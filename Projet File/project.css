@@ -1,0 +1,46 @@
+.body {
+    background-color: chocolate;
+}
+.Welcome-text {
+    font-size: 50px;
+    color: white;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.flex-container {
+    height: 300;
+    background-color: chocolate;
+    font-size: 25px;
+    display: flex;
+    justify-content: space-evenly;
+    flex-flow: row wrap;
+    align-items: center;
+    align-self: center;
+    padding: 25 25 25 25;
+}
+a{
+    text-decoration: none;
+}
+.flex-item{
+    color: cornsilk;
+    background-color: darkred;
+    width: 100px;
+    margin: 10px;
+    text-align: center;
+    line-height: 75px;
+    font-size: 30px;
+    align-self: start;
+
+}
+.welcome-text {
+    width: 70%;
+    margin: auto;
+    text-align: center;
+    color: white;
+    font-size: 22px;
+    line-height: 1.8;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 25px;
+    border-radius: 15px;
+}

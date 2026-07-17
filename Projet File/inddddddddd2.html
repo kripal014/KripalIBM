@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wavelength — AI voice editing for podcasters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-deep:#0a0620;
+    --ink:#160c3e;
+    --violet:#4c2a9e;
+    --violet-bright:#7c3aed;
+    --magenta:#e0399f;
+    --pink-hot:#ff5cc4;
+    --paper:#f6f3ff;
+    --paper-dim:rgba(246,243,255,0.68);
+    --paper-faint:rgba(246,243,255,0.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(120% 90% at 82% -10%, #6d3fd6 0%, #3a1f8f 32%, #170c40 58%, var(--ink-deep) 78%),
+      var(--ink-deep);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+  a{color:inherit;text-decoration:none;}
+  .display{font-family:'Space Grotesk',sans-serif;}
+
+  #wave-layer{
+    position:absolute;
+    top:0; right:0;
+    width:100%;
+    height:1400px;
+    z-index:0;
+    pointer-events:none;
+  }
+  #wave-layer svg{width:100%;height:100%;overflow:visible;}
+
+  header{
+    position:relative;
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:32px 6vw 0;
+  }
+  .logo{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.15rem;
+    font-weight:600;
+    letter-spacing:0.02em;
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .logo .mark{
+    width:22px;height:22px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  nav ul{
+    display:flex;
+    gap:38px;
+    list-style:none;
+    font-size:0.95rem;
+    color:var(--paper-dim);
+  }
+  nav ul li a{transition:color .2s ease;}
+  nav ul li a:hover{color:var(--paper);}
+  .nav-links{display:flex;align-items:center;gap:38px;}
+  .nav-actions{display:flex;align-items:center;gap:22px;}
+  .nav-actions .login{color:var(--paper-dim);font-size:0.95rem;transition:color .2s ease;}
+  .nav-actions .login:hover{color:var(--paper);}
+  .btn-pill{
+    padding:11px 24px;
+    border-radius:999px;
+    font-size:0.92rem;
+    font-weight:500;
+    background:linear-gradient(100deg,var(--magenta),var(--violet-bright));
+    box-shadow:0 10px 30px -8px rgba(224,57,159,0.55);
+    border:1px solid rgba(255,255,255,0.18);
+    transition:transform .2s ease, box-shadow .2s ease;
+    display:inline-block;
+  }
+  .btn-pill:hover{transform:translateY(-2px);box-shadow:0 14px 34px -6px rgba(224,57,159,0.7);}
+  .btn-ghost{
+    padding:11px 24px;
+    border-radius:999px;
+    font-size:0.92rem;
+    font-weight:500;
+    border:1px solid rgba(246,243,255,0.28);
+    color:var(--paper);
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .btn-ghost:hover{border-color:rgba(246,243,255,0.6);background:rgba(255,255,255,0.05);}
+
+  @media (max-width:860px){
+    .nav-links{display:none;}
+  }
+
+  .hero{
+    position:relative;
+    z-index:3;
+    padding:min(16vh,150px) 6vw 120px;
+    max-width:640px;
+  }
+  .eyebrow{
+    font-size:0.82rem;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--pink-hot);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:22px;height:1px;
+    background:var(--pink-hot);
+    display:inline-block;
+  }
+  .hero h1{
+    font-size:clamp(2.7rem,6vw,4.6rem);
+    line-height:1.03;
+    font-weight:700;
+    letter-spacing:-0.02em;
+  }
+  .hero h1 .accent{
+    background:linear-gradient(100deg,#ff8adf,var(--magenta) 55%,var(--violet-bright));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero p{
+    margin-top:26px;
+    font-size:1.08rem;
+    line-height:1.65;
+    color:var(--paper-dim);
+    max-width:480px;
+  }
+  .hero .cta-row{
+    margin-top:42px;
+    display:flex;
+    align-items:center;
+    gap:26px;
+  }
+  .cta-note{font-size:0.88rem;color:var(--paper-faint);}
+
+  .live-strip{
+    margin-top:64px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    max-width:420px;
+  }
+  .live-strip .tag{
+    font-size:0.78rem;
+    color:var(--paper-faint);
+    letter-spacing:0.04em;
+    white-space:nowrap;
+  }
+  .live-strip svg{height:34px;width:100%;}
+
+  .proof{
+    position:relative;
+    z-index:3;
+    padding:0 6vw 100px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px 48px;
+    align-items:center;
+    color:var(--paper-faint);
+    font-size:0.84rem;
+    letter-spacing:0.03em;
+  }
+  .proof strong{color:var(--paper-dim);font-weight:600;}
+
+  .features{
+    position:relative;
+    z-index:3;
+    background:linear-gradient(180deg, transparent, rgba(10,6,32,0.55) 6%, var(--ink-deep) 14%);
+    padding:20px 6vw 130px;
+  }
+  .features-head{
+    max-width:600px;
+    margin-bottom:64px;
+  }
+  .features-head .eyebrow{color:var(--violet-bright);}
+  .features-head .eyebrow::before{background:var(--violet-bright);}
+  .features-head h2{
+    font-size:clamp(1.9rem,3.4vw,2.6rem);
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .feature-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:rgba(246,243,255,0.09);
+    border:1px solid rgba(246,243,255,0.09);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .feature-card{
+    background:rgba(22,12,62,0.55);
+    padding:38px 32px 42px;
+    transition:background .25s ease;
+  }
+  .feature-card:hover{background:rgba(34,18,86,0.65);}
+  .feature-card .num{
+    font-size:0.78rem;
+    color:var(--pink-hot);
+    font-weight:600;
+    letter-spacing:0.06em;
+  }
+  .feature-card h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.22rem;
+    font-weight:600;
+    margin:18px 0 12px;
+  }
+  .feature-card p{
+    font-size:0.94rem;
+    line-height:1.6;
+    color:var(--paper-dim);
+  }
+  @media (max-width:860px){
+    .feature-grid{grid-template-columns:1fr;}
+  }
+
+  .stats{
+    position:relative;
+    z-index:3;
+    padding:0 6vw 140px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:60px;
+  }
+  .stat h4{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:2.6rem;
+    font-weight:700;
+    background:linear-gradient(100deg,#ff8adf,var(--violet-bright));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .stat p{color:var(--paper-faint);font-size:0.9rem;margin-top:6px;}
+
+  .closing{
+    position:relative;
+    z-index:3;
+    margin:0 6vw 100px;
+    border-radius:28px;
+    padding:70px 8vw;
+    text-align:center;
+    background:linear-gradient(120deg, rgba(224,57,159,0.22), rgba(76,42,158,0.4));
+    border:1px solid rgba(246,243,255,0.12);
+    overflow:hidden;
+  }
+  .closing h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(1.8rem,4vw,2.6rem);
+    font-weight:600;
+    max-width:640px;
+    margin:0 auto 18px;
+  }
+  .closing p{color:var(--paper-dim);max-width:480px;margin:0 auto 34px;}
+
+  footer{
+    position:relative;
+    z-index:3;
+    padding:40px 6vw 60px;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:20px;
+    color:var(--paper-faint);
+    font-size:0.85rem;
+    border-top:1px solid rgba(246,243,255,0.08);
+  }
+  footer .foot-links{display:flex;gap:26px;}
+  footer a:hover{color:var(--paper);}
+
+  @media (prefers-reduced-motion: reduce){
+    .wave-path, .live-strip path{animation:none !important;}
+  }
+  ::selection{background:var(--magenta);color:var(--paper);}
+</style>
+</head>
+<body>
+
+<div id="wave-layer">
+  <svg viewBox="0 0 1600 1400" preserveAspectRatio="xMaxYMin slice">
+    <defs>
+      <linearGradient id="waveGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ff6fd0"/>
+        <stop offset="45%" stop-color="#c93fd6"/>
+        <stop offset="100%" stop-color="#6d3fd6"/>
+      </linearGradient>
+      <linearGradient id="waveGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#7c5cff"/>
+        <stop offset="60%" stop-color="#e0399f"/>
+        <stop offset="100%" stop-color="#ff8adf"/>
+      </linearGradient>
+    </defs>
+    <g id="wave-group" fill="none" stroke-linecap="round"></g>
+  </svg>
+</div>
+
+<header>
+  <div class="logo">
+    <span class="mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M2 12h3l2-8 4 16 3-11 2 6h6" stroke="url(#waveGrad2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    Wavelength
+  </div>
+  <div class="nav-links">
+    <nav>
+      <ul>
+        <li><a href="#top">Product</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#stats">Studios</a></li>
+        <li><a href="#closing">Pricing</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="nav-actions">
+    <a class="login" href="#">Log in</a>
+    <a class="btn-pill" href="#closing">Start free</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="eyebrow">AI editing for spoken audio</div>
+  <h1>Cut the silence.<br>Keep the <span class="accent">voice</span>.</h1>
+  <p>Wavelength listens to every take, removes the ums, dead air and stumbles, and hands your podcast back to you sounding like your best day in the booth — in the time it takes to make coffee.</p>
+  <div class="cta-row">
+    <a class="btn-pill" href="#closing">Try it on your last episode</a>
+    <span class="cta-note">No card. First episode free.</span>
+  </div>
+
+  <div class="live-strip">
+    <span class="tag">Listening&nbsp;live</span>
+    <svg viewBox="0 0 300 34" id="mini-wave"></svg>
+  </div>
+</section>
+
+<div class="proof">
+  <span><strong>40M</strong> minutes of audio cleaned</span>
+  <span><strong>2,300+</strong> shows edited weekly</span>
+  <span>Trusted by indie hosts and network studios alike</span>
+</div>
+
+<section class="features" id="features">
+  <div class="features-head">
+    <div class="eyebrow">How it listens</div>
+    <h2>Every edit a human would make — done while you're still talking.</h2>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="num">01</div>
+      <h3>Filler removal</h3>
+      <p>Ums, ahs, and false starts are found by ear, not by a blunt volume filter, so your real pauses for effect stay untouched.</p>
+    </div>
+    <div class="feature-card">
+      <div class="num">02</div>
+      <h3>Level matching</h3>
+      <p>Guests recorded on a laptop mic and a studio condenser end up sitting at the same loudness, automatically, take after take.</p>
+    </div>
+    <div class="feature-card">
+      <div class="num">03</div>
+      <h3>Multitrack sync</h3>
+      <p>Remote co-hosts drift out of sync for all kinds of reasons. Wavelength lines every track back up to the frame.</p>
+    </div>
+    <div class="feature-card">
+      <div class="num">04</div>
+      <h3>Chapter markers</h3>
+      <p>Topic shifts in the conversation are detected and turned into named chapters your listeners can jump between.</p>
+    </div>
+    <div class="feature-card">
+      <div class="num">05</div>
+      <h3>Show notes draft</h3>
+      <p>A first pass at notes and timestamps is written from the transcript, ready for you to trim down, not write from scratch.</p>
+    </div>
+    <div class="feature-card">
+      <div class="num">06</div>
+      <h3>Export anywhere</h3>
+      <p>Send the finished mix straight to your host, or pull stems back into your own DAW if an episode needs a human final pass.</p>
+    </div>
+  </div>
+</section>
+
+<section class="stats" id="stats">
+  <div class="stat">
+    <h4>18 min</h4>
+    <p>average edit time per hour of raw audio</p>
+  </div>
+  <div class="stat">
+    <h4>92%</h4>
+    <p>of fillers caught without a manual pass</p>
+  </div>
+  <div class="stat">
+    <h4>4.8/5</h4>
+    <p>average rating from indie hosts</p>
+  </div>
+</section>
+
+<section class="closing" id="closing">
+  <h2>Your next episode could already be edited.</h2>
+  <p>Upload one recording and hear what Wavelength does with it. If it doesn't save you time, don't come back.</p>
+  <a class="btn-pill" href="#top">Upload an episode, free</a>
+</section>
+
+<footer>
+  <div>© 2026 Wavelength Audio, Inc.</div>
+  <div class="foot-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Contact</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const group = document.getElementById('wave-group');
+  const lineCount = 9;
+  const paths = [];
+
+  for(let i=0;i<lineCount;i++){
+    const p = document.createElementNS(NS,"path");
+    p.setAttribute("stroke", i % 2 === 0 ? "url(#waveGrad1)" : "url(#waveGrad2)");
+    p.setAttribute("stroke-width", (0.9 + (i%4)*0.35).toFixed(2));
+    p.setAttribute("opacity", (0.16 + (i%5)*0.1).toFixed(2));
+    p.classList.add('wave-path');
+    group.appendChild(p);
+    paths.push({el:p, seed:Math.random()*1000, speed:0.18+Math.random()*0.22, amp:60+Math.random()*90, yBase:120+i*130});
+  }
+
+  function buildPath(seed, amp, yBase, t){
+    const w = 1600, steps = 10;
+    let d = `M ${-100} ${yBase}`;
+    for(let s=0;s<=steps;s++){
+      const x = -100 + (w+300) * (s/steps);
+      const y = yBase + Math.sin((s/steps)*Math.PI*2.1 + t + seed) * amp
+                       + Math.sin((s/steps)*Math.PI*4.3 + t*1.3 + seed) * (amp*0.28);
+      d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    return d;
+  }
+
+  let t0 = performance.now();
+  function tick(now){
+    const t = (now - t0) / 1000;
+    paths.forEach(p=>{
+      const localT = t * p.speed;
+      p.el.setAttribute("d", buildPath(p.seed, p.amp, p.yBase, localT));
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById('mini-wave');
+  const barCount = 40;
+  const bars = [];
+  for(let i=0;i<barCount;i++){
+    const r = document.createElementNS(NS,"rect");
+    r.setAttribute("x", i*7.5);
+    r.setAttribute("width", 3.5);
+    r.setAttribute("rx", 1.75);
+    r.setAttribute("fill", "url(#waveGrad2)");
+    svg.appendChild(r);
+    bars.push({el:r, seed:Math.random()*10, speed:0.6+Math.random()*1.4});
+  }
+  let t0 = performance.now();
+  function tick(now){
+    const t = (now-t0)/1000;
+    bars.forEach((b,i)=>{
+      const h = 4 + (Math.sin(t*b.speed + b.seed + i*0.3)*0.5+0.5) * 26;
+      b.el.setAttribute("height", h.toFixed(1));
+      b.el.setAttribute("y", (17 - h/2).toFixed(1));
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>
